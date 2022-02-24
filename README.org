@@ -1,0 +1,13 @@
+#+TITLE:Redes de Computadores
+#+SUBTITLE:Universidade de Évora
+
+* Intro
+
+Neste repositório vamos encontrar código exemplo, para utilizar nas
+aulas práticas de Redes de Computadores.
+
+* Disclaimer
+
+Alguns programas contêm erros *propositados*, cabendo aos alunos
+solucionar qualquer problema que detectem no código.
+
