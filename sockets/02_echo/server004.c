@@ -1,108 +1,74 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <unistd.h> 
+#include <stdio.h> 
+#include <sys/socket.h> 
+#include <stdlib.h> 
+#include <netinet/in.h> 
+#include <string.h> 
+#include <time.h>        
 
-#include <netdb.h>
-#include <netinet/in.h>
+#define PORT 1300
+#define BUFSIZE 256
 
-#include <string.h>
+int main(int argc, char const *argv[]) 
+{ 
+    int server_fd, new_socket; 
+    struct sockaddr_in address;
+    
+    int opt = 1;      // for setsockopt() SO_REUSEADDR, below
+    int addrlen = sizeof(address); 
+    char buffer[BUFSIZE];
 
-void doprocessing (int sock);
+    // Creating socket file descriptor 
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    { 
+        perror("socket failed"); 
+        exit(EXIT_FAILURE); 
+    } 
+       
+    // Forcefully attaching socket to the port 1300 
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 
+                                                  &opt, sizeof(opt))) 
+    { 
+        perror("setsockopt failed"); 
+        exit(EXIT_FAILURE); 
+    } 
+    address.sin_family = AF_INET; 
+    address.sin_addr.s_addr = INADDR_ANY; 
+    address.sin_port = htons( PORT ); 
+       
+    // Bind the socket to the network address and port
+    if (  bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0  ) 
+    { 
+        perror("bind failed"); 
+        exit(EXIT_FAILURE); 
+    } 
+    if (listen(server_fd, 3) < 0) 
+    { 
+        perror("listen failed"); 
+        exit(EXIT_FAILURE); 
+    }
 
-int main( int argc, char *argv[] ) {
-   int sockfd, newsockfd, portno, clilen;
-   char buffer[256];
-   struct sockaddr_in serv_addr, cli_addr;
-   int n, pid;
-   
-   /* First call to socket() function */
-   sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-   /* Let's make the port reusable */
-   int enable = 1;
-   setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
- 
-   if (sockfd < 0) {
-      perror("ERROR opening socket");
-      exit(1);
-   }
-   
-   /* Initialize socket structure */
-   bzero((char *) &serv_addr, sizeof(serv_addr));
-   portno = 5001;
-   
-   serv_addr.sin_family = AF_INET;
-   serv_addr.sin_addr.s_addr = INADDR_ANY;
-   serv_addr.sin_port = htons(portno);
-   
-   /* Now bind the host address using bind() call.*/
-   if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-      perror("ERROR on binding");
-      exit(1);
-   }
-   
-   /* Now start listening for the clients, here
-      * process will go in sleep mode and will wait
-      * for the incoming connection
-   */
-   
-   listen(sockfd,5);
-   clilen = sizeof(cli_addr);
-   
-   while (1) {
-      newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-		
-      if (newsockfd < 0) {
-         perror("ERROR on accept");
-         exit(1);
-      }
+    // Wait for a connection
+    while (1) {
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
+                                 (socklen_t*)&addrlen))<0) { 
+            perror("accept failed"); 
+            exit(EXIT_FAILURE); 
+        }
+        
+        while (strncmp(buffer, "quit", 4)) {
+            bzero(buffer, BUFSIZE);
       
-      /* Create child process */
-      pid = fork();
-		
-      if (pid < 0) {
-         perror("ERROR on fork");
-         exit(1);
-      }
+            printf("Client connected.\n");
+            recv(new_socket, buffer, BUFSIZE-1, 0);
       
-      if (pid == 0) {
-         /* This is the client process */
-         close(sockfd);
-	 while (1) {
-	   doprocessing(newsockfd);
-	 }
-	 exit(0);
-      }
-      else {
-         /* This is the main server process */
-         close(newsockfd);
-      }
-		
-   } /* end of while */
-}
-
-void doprocessing (int sock) {
-   int n;
-   char buffer[256];
-   bzero(buffer,256);
-   n = read(sock,buffer,255);
-   
-   if (n <= 0) {
-      perror("Client disconnected...");
-      exit(1);
-   }
-   
-   printf("Client says: %s\n",buffer);
-   if (strcmp(buffer, "QUIT") == 0) {
-     printf("Bye!\n");
-     return;
-   }
-   
-   n = write(sock, buffer, strlen(buffer));
-   
-   if (n < 0) {
-      perror("ERROR writing to socket");
-      exit(1);
-   }
-	
-}
+            printf("Client says: '%s'\n", buffer);
+            send(new_socket, buffer, strlen(buffer), 0 );
+      
+            printf("%s\n", );("Replied to client\n");
+        }
+    
+        close(new_socket);
+    }
+    return 0; 
+} 
