@@ -49,22 +49,24 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE); 
     }
 
-    // Wait for a connection
-    if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
-                       (socklen_t*)&addrlen))<0) 
-    { 
-        perror("accept"); 
-        exit(EXIT_FAILURE); 
+    while(1) {
+        // Wait for a connection
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
+                                 (socklen_t*)&addrlen))<0) 
+            { 
+                perror("accept"); 
+                exit(EXIT_FAILURE); 
+            }
+    
+        printf("Client connected.\n");
+        read(new_socket, buffer, 256);
+    
+        printf("Read from client: %s\n", buffer);
+    
+        write(new_socket, buffer, strlen(buffer));
+    
+        printf("Data sent to client\n");
+        close(new_socket);
     }
-    
-    printf("Client connected.\n");
-    read(new_socket, buffer, 256);
-    
-    printf("Read from client: %s\n", buffer);
-    
-    write(new_socket, buffer, strlen(buffer));
-    
-    printf("Data sent to client\n");
-    close(new_socket);
     return 0; 
 } 
