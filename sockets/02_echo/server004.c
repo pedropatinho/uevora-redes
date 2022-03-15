@@ -15,7 +15,9 @@ int main(int argc, char const *argv[])
     struct sockaddr_in address;
     
     int opt = 1;      // for setsockopt() SO_REUSEADDR, below
-    int addrlen = sizeof(address); 
+    int addrlen = sizeof(address);
+    int n;
+    
     char buffer[BUFSIZE];
 
     // Creating socket file descriptor 
@@ -55,17 +57,21 @@ int main(int argc, char const *argv[])
             perror("accept failed"); 
             exit(EXIT_FAILURE); 
         }
+        printf("Client connected.\n");
         
-        while (strncmp(buffer, "quit", 4)) {
+        while (1) {
             bzero(buffer, BUFSIZE);
       
-            printf("Client connected.\n");
-            recv(new_socket, buffer, BUFSIZE-1, 0);
-      
+            n = recv(new_socket, buffer, BUFSIZE-1, 0);
+            if (n<=0) {
+                printf("Client disconnected.\n");
+                break;
+            }
+
             printf("Client says: '%s'\n", buffer);
-            send(new_socket, buffer, strlen(buffer), 0 );
+            send(new_socket, buffer, strlen(buffer)+1, 0 );
       
-            printf("%s\n", );("Replied to client\n");
+            printf("Replied to client\n");
         }
     
         close(new_socket);
